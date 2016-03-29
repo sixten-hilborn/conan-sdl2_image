@@ -14,7 +14,7 @@ class SDLConan(ConanFile):
     fPIC=True'''
     generators = "cmake"
     url="http://github.com/lasote/conan-sdl2_image"
-    requires = "SDL2/2.0.4@lasote/stable"
+    requires = "SDL2/2.0.4@lasote/stable", "libpng/1.6.21@lasote/stable", "libjpeg-turbo/1.4.2@lasote/stable", "zlib/1.2.8@lasote/stable"
     license="MIT"
 
     def config(self):
@@ -33,19 +33,19 @@ class SDLConan(ConanFile):
 
    
     def build_with_make(self):
+        
+        env = ConfigureEnvironment(self.deps_cpp_info, self.settings)
+        if self.options.fPIC:
+            env_line = env.command_line.replace('CFLAGS="', 'CFLAGS="-fPIC ')
+        else:
+            env_line = env.command_line
+            
+        env_line = env_line.replace('LIBS="', 'LIBS2="') # Rare error if LIBS is kept
          
         self.run("cd %s" % self.folder)
         self.run("chmod a+x %s/configure" % self.folder)
         
-        if self.settings.arch == "x86":
-            self.cpp_info.cflags.append("-m32")
-            self.cpp_info.cppflags.append("-m32")
-            self.cpp_info.sharedlinkflags.append("-m32")
-        
-        args = 'CFLAGS="%s" CXXFLAGS="%s" LDFLAGS="%s"' % (" ".join(self.cpp_info.cflags), 
-                                                           " ".join(self.cpp_info.cppflags),
-                                                           " ".join(self.cpp_info.sharedlinkflags))
-
+        self.output.warn(env_line)
         if self.settings.os == "Macos": # Fix rpath, we want empty rpaths, just pointing to lib file
             old_str = "-install_name \$rpath/"
             new_str = "-install_name "
@@ -53,10 +53,10 @@ class SDLConan(ConanFile):
             self.run("chmod a+x %s/build-scripts/gcc-fat.sh" % self.folder)
             configure_command = 'cd %s && CC=$(pwd)/build-scripts/gcc-fat.sh ./configure %s' % (self.folder, args)
         else:
-            configure_command = 'cd %s && ./configure %s' % (self.folder, args)
+            configure_command = 'cd %s && %s ./configure' % (self.folder, env_line)
         self.output.warn("Configure with: %s" % configure_command)
         self.run(configure_command)
-        self.run("cd %s && make" % (self.folder))
+        self.run("cd %s && %s make" % (self.folder, env_line))
 
 
     def package(self):
