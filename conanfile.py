@@ -14,7 +14,7 @@ class SDLConan(ConanFile):
     fPIC=True'''
     generators = "cmake"
     url="http://github.com/lasote/conan-sdl2_image"
-    requires = "SDL2/2.0.4@lasote/stable", "libpng/1.6.21@lasote/stable", "libjpeg-turbo/1.4.2@lasote/stable"
+    requires = "SDL2/2.0.4@lasote/stable", "libpng/1.6.21@lasote/stable", "libjpeg-turbo/1.4.2@lasote/stable", 
     license="MIT"
 
     def config(self):
@@ -53,22 +53,9 @@ class SDLConan(ConanFile):
             new_str = "-install_name "
             replace_in_file("%s/configure" % self.folder, old_str, new_str)
         
-        old_str = 'LIBS="-lpng -lz $LIBS"'
-        new_str = '' # Trust conaaaan!
-        replace_in_file("%s/configure" % self.folder, old_str, new_str)
-        
-        old_str = 'IMG_LIBS="-lpng -lz $IMG_LIBS"'
-        new_str = 'IMG_LIBS="$IMG_LIBS"' # Trust conaaaan!
-        replace_in_file("%s/configure" % self.folder, old_str, new_str)
-        
-        old_str = 'IMG_LIBS="-ljpeg $IMG_LIBS"'
-        new_str = 'IMG_LIBS="$IMG_LIBS"' # Trust conaaaan!
-        replace_in_file("%s/configure" % self.folder, old_str, new_str)
-        
         old_str = '#define LOAD_PNG_DYNAMIC "$png_lib"'
         new_str = ''
         replace_in_file("%s/configure" % self.folder, old_str, new_str)
-        
         
         configure_command = 'cd %s && %s SDL2_CONFIG=%s %s ./configure' % (self.folder, env_line, sdl2_config_path, custom_vars)
         self.output.warn("Configure with: %s" % configure_command)
@@ -76,6 +63,14 @@ class SDLConan(ConanFile):
         
         old_str = 'DEFS = '
         new_str = 'DEFS = -DLOAD_JPG=1 -DLOAD_PNG=1 ' # Trust conaaaan!
+        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        
+        old_str = '\nLIBS = '
+        new_str = '\n# Removed by conan: LIBS2 = '
+        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        
+        old_str = '\nLIBTOOL = '
+        new_str = '\nLIBS = %s \nLIBTOOL = ' % " ".join(["-l%s" % lib for lib in self.deps_cpp_info.libs]) # Trust conaaaan!
         replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
         
         self.run("cd %s && %s make" % (self.folder, env_line))
