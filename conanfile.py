@@ -14,7 +14,7 @@ class SDLConan(ConanFile):
     fPIC=True'''
     generators = "cmake"
     url="http://github.com/lasote/conan-sdl2_image"
-    requires = "SDL2/2.0.4@lasote/stable", "libpng/1.6.21@lasote/stable", "libjpeg-turbo/1.4.2@lasote/stable", "zlib/1.2.8@lasote/stable"
+    requires = "SDL2/2.0.4@lasote/stable", "libpng/1.6.21@lasote/stable", "libjpeg-turbo/1.4.2@lasote/stable"
     license="MIT"
 
     def config(self):
@@ -40,22 +40,44 @@ class SDLConan(ConanFile):
         else:
             env_line = env.command_line
             
-        #env_line = env_line.replace('LIBS="', 'LIBS2="') # Rare error if LIBS is kept
+        custom_vars = 'LIBPNG_LIBS="-L%s" SDL_LIBS=0' % (self.deps_cpp_info["libpng"].lib_paths[0])
+        sdl2_config_path = os.path.join(self.deps_cpp_info["SDL2"].lib_paths[0], "sdl2-config")
          
         self.run("cd %s" % self.folder)
         self.run("chmod a+x %s/configure" % self.folder)
+        self.run("chmod a+x %s" % sdl2_config_path)
         
         self.output.warn(env_line)
         if self.settings.os == "Macos": # Fix rpath, we want empty rpaths, just pointing to lib file
             old_str = "-install_name \$rpath/"
             new_str = "-install_name "
             replace_in_file("%s/configure" % self.folder, old_str, new_str)
-            self.run("chmod a+x %s/build-scripts/gcc-fat.sh" % self.folder)
-            configure_command = 'cd %s && CC=$(pwd)/build-scripts/gcc-fat.sh ./configure %s' % (self.folder, args)
-        else:
-            configure_command = 'cd %s && %s ./configure' % (self.folder, env_line)
+        
+        old_str = 'LIBS="-lpng -lz $LIBS"'
+        new_str = '' # Trust conaaaan!
+        replace_in_file("%s/configure" % self.folder, old_str, new_str)
+        
+        old_str = 'IMG_LIBS="-lpng -lz $IMG_LIBS"'
+        new_str = 'IMG_LIBS="$IMG_LIBS"' # Trust conaaaan!
+        replace_in_file("%s/configure" % self.folder, old_str, new_str)
+        
+        old_str = 'IMG_LIBS="-ljpeg $IMG_LIBS"'
+        new_str = 'IMG_LIBS="$IMG_LIBS"' # Trust conaaaan!
+        replace_in_file("%s/configure" % self.folder, old_str, new_str)
+        
+        old_str = '#define LOAD_PNG_DYNAMIC "$png_lib"'
+        new_str = ''
+        replace_in_file("%s/configure" % self.folder, old_str, new_str)
+        
+        
+        configure_command = 'cd %s && %s SDL2_CONFIG=%s %s ./configure' % (self.folder, env_line, sdl2_config_path, custom_vars)
         self.output.warn("Configure with: %s" % configure_command)
         self.run(configure_command)
+        
+        old_str = 'DEFS = '
+        new_str = 'DEFS = -DLOAD_JPG=1 -DLOAD_PNG=1 ' # Trust conaaaan!
+        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        
         self.run("cd %s && %s make" % (self.folder, env_line))
 
 
