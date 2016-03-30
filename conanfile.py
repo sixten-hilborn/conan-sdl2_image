@@ -40,7 +40,7 @@ class SDLConan(ConanFile):
         else:
             env_line = env.command_line
             
-        env_line = env_line.replace('LIBS="', 'LIBS2="') # Rare error if LIBS is kept
+        #env_line = env_line.replace('LIBS="', 'LIBS2="') # Rare error if LIBS is kept
          
         self.run("cd %s" % self.folder)
         self.run("chmod a+x %s/configure" % self.folder)
