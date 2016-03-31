@@ -3,6 +3,8 @@ from conans.tools import download, unzip, replace_in_file
 import os
 import shutil
 from conans import CMake, ConfigureEnvironment
+from conans.model.settings import Settings
+import copy
 
 class SDLConan(ConanFile):
     name = "SDL2_image"
@@ -40,7 +42,7 @@ class SDLConan(ConanFile):
         else:
             env_line = env.command_line
             
-        custom_vars = 'LIBPNG_LIBS="-L%s" SDL_LIBS=0' % (self.deps_cpp_info["libpng"].lib_paths[0])
+        custom_vars = 'LIBPNG_LIBS= SDL_LIBS= LIBPNG_CFLAGS='
         sdl2_config_path = os.path.join(self.deps_cpp_info["SDL2"].lib_paths[0], "sdl2-config")
          
         self.run("cd %s" % self.folder)
@@ -54,6 +56,10 @@ class SDLConan(ConanFile):
             replace_in_file("%s/configure" % self.folder, old_str, new_str)
         
         old_str = '#define LOAD_PNG_DYNAMIC "$png_lib"'
+        new_str = ''
+        replace_in_file("%s/configure" % self.folder, old_str, new_str)
+        
+        old_str = '#define LOAD_JPG_DYNAMIC "$jpg_lib"'
         new_str = ''
         replace_in_file("%s/configure" % self.folder, old_str, new_str)
         
@@ -71,6 +77,37 @@ class SDLConan(ConanFile):
         
         old_str = '\nLIBTOOL = '
         new_str = '\nLIBS = %s \nLIBTOOL = ' % " ".join(["-l%s" % lib for lib in self.deps_cpp_info.libs]) # Trust conaaaan!
+        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        
+        old_str = '\nLIBPNG_CFLAGS ='
+        new_str = '\n# Commented by conan: LIBPNG_CFLAGS ='
+        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        
+        old_str = '\nLIBPNG_LIBS ='
+        new_str = '\n# Commented by conan: LIBPNG_LIBS ='
+        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        
+        old_str = '\nOBJCFLAGS'
+        new_str = '\n# Commented by conan: OBJCFLAGS ='
+        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        
+        old_str = '\nSDL_CFLAGS ='
+        new_str = '\n# Commented by conan: SDL_CFLAGS ='
+        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        
+        old_str = '\nSDL_LIBS ='
+        new_str = '\n# Commented by conan: SDL_LIBS ='
+        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        
+        old_str = '\nCFLAGS ='
+        new_str = '\n# Commented by conan: CFLAGS ='
+        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        
+        old_str = '\n# Commented by conan: CFLAGS ='
+        fpic = "-fPIC"  if self.options.fPIC else ""
+        m32 = "-m32" if self.settings.arch == "x86" else ""
+        debug = "-g" if self.settings.build_type == "Debug" else "-s -DNDEBUG"
+        new_str = '\nCFLAGS =%s %s %s %s\n# Commented by conan: CFLAGS =' % (" ".join(self.deps_cpp_info.cflags), fpic, m32, debug)
         replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
         
         self.run("cd %s && %s make" % (self.folder, env_line))
