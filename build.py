@@ -9,3 +9,4 @@ if __name__ == "__main__":
         if not build[0]["arch"] == "x86":
             x86_64_builds.append([build[0], build[1]])
     builder.builds = x86_64_builds
+    builder.run()
