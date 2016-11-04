@@ -6,6 +6,15 @@ from conans import CMake, ConfigureEnvironment
 from conans.model.settings import Settings
 import copy
 
+def build_sln_command(settings, sln_path, targets=None, upgrade_project=True):
+    # Remove om conan 0.15.0 and replace with tools.
+    targets = targets or []
+    command = "devenv %s /upgrade && " % sln_path if upgrade_project else ""
+    command += "msbuild %s /p:Configuration=%s" % (sln_path, settings.build_type)
+    if targets:
+        command += " /target:%s" % ";".join(targets)
+    return command
+
 class SDLConan(ConanFile):
     name = "SDL2_image"
     version = "2.0.1"
@@ -34,7 +43,7 @@ class SDLConan(ConanFile):
             lib_path = self.deps_cpp_info["SDL2"].lib_paths[0]
             additional_libs = ";".join(more_libs).replace("SDL2.lib;", "").replace("SDL2main.lib;", "")
             tools.replace_in_file("%s/VisualC/SDL_image.vcxproj" % self.folder, "SDL2.lib", "%s\\SDL2.lib;%s\\SDL2main.lib;%s" % (lib_path, lib_path, additional_libs))
-            build_command = tools.build_sln_command(self.settings, sln_path, targets=["SDL2_image"])
+            build_command = build_sln_command(self.settings, sln_path, targets=["SDL2_image"])
             env = ConfigureEnvironment(self)
             command = "%s && %s" % (env.command_line_env, build_command)
             self.output.warn(command)
