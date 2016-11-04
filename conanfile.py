@@ -1,5 +1,5 @@
 from conans import ConanFile
-from conans.tools import download, unzip, replace_in_file
+from conans import tools
 import os
 import shutil
 from conans import CMake, ConfigureEnvironment
@@ -24,12 +24,21 @@ class SDLConan(ConanFile):
 
     def source(self):
         zip_name = "%s.tar.gz" % self.folder
-        download("https://www.libsdl.org/projects/SDL_image/release/%s" % zip_name, zip_name)
-        unzip(zip_name)
+        tools.download("https://www.libsdl.org/projects/SDL_image/release/%s" % zip_name, zip_name)
+        tools.unzip(zip_name)
 
     def build(self):
         if self.settings.os == "Windows":
-            self.output.error("Windows not supported yet. Contact the author on github: github.com/lasote/conan-sdl2_image")
+            sln_path = "%s/VisualC/SDL_image.sln" % self.folder
+            more_libs = ["%s.lib" % lib for lib in self.deps_cpp_info["SDL2"].libs]
+            lib_path = self.deps_cpp_info["SDL2"].lib_paths[0]
+            additional_libs = ";".join(more_libs).replace("SDL2.lib;", "").replace("SDL2main.lib;", "")
+            tools.replace_in_file("%s/VisualC/SDL_image.vcxproj" % self.folder, "SDL2.lib", "%s\\SDL2.lib;%s\\SDL2main.lib;%s" % (lib_path, lib_path, additional_libs))
+            build_command = tools.build_sln_command(self.settings, sln_path, targets=["SDL2_image"])
+            env = ConfigureEnvironment(self)
+            command = "%s && %s" % (env.command_line_env, build_command)
+            self.output.warn(command)
+            self.run(command)
         else:
             self.build_with_make()
 
@@ -57,11 +66,11 @@ class SDLConan(ConanFile):
         
         old_str = '#define LOAD_PNG_DYNAMIC "$png_lib"'
         new_str = ''
-        replace_in_file("%s/configure" % self.folder, old_str, new_str)
+        tools.replace_in_file("%s/configure" % self.folder, old_str, new_str)
         
         old_str = '#define LOAD_JPG_DYNAMIC "$jpg_lib"'
         new_str = ''
-        replace_in_file("%s/configure" % self.folder, old_str, new_str)
+        tools.replace_in_file("%s/configure" % self.folder, old_str, new_str)
         
         configure_command = 'cd %s && %s SDL2_CONFIG=%s %s ./configure' % (self.folder, env_line, sdl2_config_path, custom_vars)
         self.output.warn("Configure with: %s" % configure_command)
@@ -69,46 +78,46 @@ class SDLConan(ConanFile):
         
         old_str = 'DEFS = '
         new_str = 'DEFS = -DLOAD_JPG=1 -DLOAD_PNG=1 ' # Trust conaaaan!
-        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        tools.replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
         
         old_str = '\nLIBS = '
         new_str = '\n# Removed by conan: LIBS2 = '
-        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        tools.replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
         
         old_str = '\nLIBTOOL = '
         new_str = '\nLIBS = %s \nLIBTOOL = ' % " ".join(["-l%s" % lib for lib in self.deps_cpp_info.libs]) # Trust conaaaan!
-        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        tools.replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
         
         old_str = '\nLIBPNG_CFLAGS ='
         new_str = '\n# Commented by conan: LIBPNG_CFLAGS ='
-        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        tools.replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
         
         old_str = '\nLIBPNG_LIBS ='
         new_str = '\n# Commented by conan: LIBPNG_LIBS ='
-        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        tools.replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
         
         old_str = '\nOBJCFLAGS'
         new_str = '\n# Commented by conan: OBJCFLAGS ='
-        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        tools.replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
         
         old_str = '\nSDL_CFLAGS ='
         new_str = '\n# Commented by conan: SDL_CFLAGS ='
-        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        tools.replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
         
         old_str = '\nSDL_LIBS ='
         new_str = '\n# Commented by conan: SDL_LIBS ='
-        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        tools.replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
         
         old_str = '\nCFLAGS ='
         new_str = '\n# Commented by conan: CFLAGS ='
-        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        tools.replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
         
         old_str = '\n# Commented by conan: CFLAGS ='
         fpic = "-fPIC"  if self.options.fPIC else ""
         m32 = "-m32" if self.settings.arch == "x86" else ""
         debug = "-g" if self.settings.build_type == "Debug" else "-s -DNDEBUG"
         new_str = '\nCFLAGS =%s %s %s %s\n# Commented by conan: CFLAGS =' % (" ".join(self.deps_cpp_info.cflags), fpic, m32, debug)
-        replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
+        tools.replace_in_file("%s/Makefile" % self.folder, old_str, new_str)
         
         self.run("cd %s && %s make" % (self.folder, env_line))
 
@@ -122,10 +131,13 @@ class SDLConan(ConanFile):
         # UNIX
         if not self.options.shared:
             self.copy(pattern="*.a", dst="lib", src="%s" % self.folder, keep_path=False)
-            self.copy(pattern="*.a", dst="lib", src="%s" % self.folder, keep_path=False)   
+            self.copy(pattern="*.a", dst="lib", src="%s" % self.folder, keep_path=False)
+            self.copy(pattern="*.dll", dst="bin", src="%s" % self.folder, keep_path=False) 
         else:
             self.copy(pattern="*.so*", dst="lib", src="%s" % self.folder, keep_path=False)
             self.copy(pattern="*.dylib*", dst="lib", src="%s" % self.folder, keep_path=False)
+            
+        self.copy(pattern="*.lib", dst="lib", src="%s" % self.folder, keep_path=False)
 
     def package_info(self):  
                 

@@ -14,7 +14,7 @@ int main(int argc, char** args)
     short int quit = 0;
 
     SDL_Texture* texture = NULL;
-    SDL_Surface* temp = IMG_Load("../face.png");
+    SDL_Surface* temp = IMG_Load("../../../face.png");
 	if(!temp) {
 	    printf("IMG_Load: %s\n", IMG_GetError());
 	    // handle error
