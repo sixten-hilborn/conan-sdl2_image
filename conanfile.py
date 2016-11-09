@@ -29,7 +29,7 @@ class SDLConan(ConanFile):
         shutil.copy("CMakeLists.txt", "%s/CMakeLists.txt" % self.folder)
         cmake = CMake(self.settings)
         shared = "-DBUILD_SHARED_LIBS=%s" % ("ON" if self.options.shared else "OFF")
-        if self.compiler == "Visual Studio":
+        if self.settings.compiler == "Visual Studio":
             self.options.fPIC = False
         fpic = "-DFPIC=ON" if self.options.fPIC else ""
 
