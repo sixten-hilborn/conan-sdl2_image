@@ -7,9 +7,10 @@ class SDLConan(ConanFile):
     version = "2.0.1"
     folder = "SDL2_image-%s" % version
     settings = "os", "arch", "compiler", "build_type"
-    options = {"shared": [True, False], "fPIC": [True, False]}
+    options = {"shared": [True, False], "fPIC": [True, False], "fast_jpg_load": [True, False]}
     default_options = '''shared=False
-    fPIC=True'''
+    fPIC=True
+    fast_jpg_load=False'''
     generators = "cmake"
     exports = ["CMakeLists.txt"]
     url="http://github.com/lasote/conan-sdl2_image"
@@ -28,13 +29,18 @@ class SDLConan(ConanFile):
     def build(self):
         shutil.copy("CMakeLists.txt", "%s/CMakeLists.txt" % self.folder)
         cmake = CMake(self.settings)
-        shared = "-DBUILD_SHARED_LIBS=%s" % ("ON" if self.options.shared else "OFF")
+
+        args = ["-DLOAD_TIF=0", "-DLOAD_WEBP=0"] # We do not yet support webp and tif image loading
+
+        if self.options.fast_jpg_load:
+            args += ["-DFAST_JPG_LOAD"]
+        args += ["-DBUILD_SHARED_LIBS=%s" % ("ON" if self.options.shared else "OFF")]
         if self.settings.compiler == "Visual Studio":
             self.options.fPIC = False
-        fpic = "-DFPIC=ON" if self.options.fPIC else ""
+        args += ["-DFPIC=%s" % ("ON" if self.options.fPIC else "OFF")]
 
         self.run("cd %s &&  mkdir build" % self.folder)
-        self.run('cd %s/build && cmake .. %s %s %s' % (self.folder, cmake.command_line, shared, fpic))
+        self.run('cd %s/build && cmake .. %s %s' % (self.folder, cmake.command_line, " ".join(args)))
         self.run("cd %s/build && cmake --build . %s" % (self.folder, cmake.build_config))
 
     def package(self):
