@@ -1,7 +1,6 @@
 #include <SDL.h>
-
-//In order to access SDL_image features, we must include SDL_image.h
 #include <SDL_image.h>
+#include <stdio.h>
 
 #undef main
 
