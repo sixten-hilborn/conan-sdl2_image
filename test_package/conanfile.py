@@ -26,7 +26,7 @@ class DefaultNameConan(ConanFile):
 
     def imports(self):
         self.copy(pattern="*.dll", dst="bin", src="bin")
-        self.copy(pattern="*.dylib", dst="bin", src="lib")
+        self.copy(pattern="*.dylib", dst="bin", src="lib") #What about .so ? dont we use .rpath or is that uncommon practice for linux?
 
     def test(self):
         self.run("cd bin && .%sexample" % (os.sep))
