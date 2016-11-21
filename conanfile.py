@@ -52,7 +52,7 @@ class SDLConan(ConanFile):
         if self.settings.os == "Macos": # Fix rpath, we want empty rpaths, just pointing to lib file
             old_str = "-install_name \$rpath/"
             new_str = "-install_name "
-            replace_in_file("%s/configure" % self.folder, old_str, new_str)
+            tools.replace_in_file("%s/configure" % self.folder, old_str, new_str)
         
         old_str = '#define LOAD_PNG_DYNAMIC "$png_lib"'
         new_str = ''
