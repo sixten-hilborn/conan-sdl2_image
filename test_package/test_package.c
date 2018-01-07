@@ -8,12 +8,12 @@ int main(int argc, char** args)
 {
     SDL_Init(SDL_INIT_EVERYTHING);
     //For loading PNG images
- IMG_Init(IMG_INIT_PNG);
+    IMG_Init(IMG_INIT_PNG);
     SDL_Event input;
     short int quit = 0;
 
     SDL_Texture* texture = NULL;
-    SDL_Surface* temp = IMG_Load("../../../face.png");
+    SDL_Surface* temp = IMG_Load("face.png");
 	if(!temp) {
 	    printf("IMG_Load: %s\n", IMG_GetError());
 	    // handle error
@@ -26,7 +26,7 @@ int main(int argc, char** args)
  	SDL_FreeSurface(temp);
 
     //Deleting the texture
-	 SDL_DestroyTexture(texture);
+    SDL_DestroyTexture(texture);
 
     //For quitting IMG systems
  	IMG_Quit();

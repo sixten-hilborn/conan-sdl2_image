@@ -1,32 +1,25 @@
-from conans import ConanFile
-from conans import GCC, CMake
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from conans import ConanFile, CMake, tools, RunEnvironment
 import os
 
-############### CONFIGURE THESE VALUES ##################
-default_user = "lasote"
-default_channel = "testing"
-#########################################################
 
-channel = os.getenv("CONAN_CHANNEL", default_channel)
-username = os.getenv("CONAN_USERNAME", default_user)
-
-
-class DefaultNameConan(ConanFile):
-    name = "DefaultName"
-    version = "0.1"
+class TestPackageConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
-    requires = "SDL2_image/2.0.1@%s/%s" % (username, channel)
-    generators = ["cmake"] # Generates conanbuildinfo.gcc with all deps information
-    export = ["face.png"]
+    generators = "cmake"
 
     def build(self):
-        cmake = CMake(self.settings)
-        self.run('cmake %s %s' % (self.conanfile_directory, cmake.command_line))
-        self.run("cmake --build . %s" % cmake.build_config)
-
-    def imports(self):
-        self.copy(pattern="*.dll", dst="bin", src="bin")
-        self.copy(pattern="*.dylib", dst="bin", src="lib") #What about .so ? dont we use .rpath or is that uncommon practice for linux?
+        cmake = CMake(self)
+        cmake.configure()
+        cmake.build()
 
     def test(self):
-        self.run("cd bin && .%sexample" % (os.sep))
+        with tools.environment_append(RunEnvironment(self).vars):
+            bin_path = os.path.join("bin", "test_package")
+            if self.settings.os == "Windows":
+                self.run(bin_path)
+            elif self.settings.os == "Macos":
+                self.run("DYLD_LIBRARY_PATH=%s %s" % (os.environ.get('DYLD_LIBRARY_PATH', ''), bin_path))
+            else:
+                self.run("LD_LIBRARY_PATH=%s %s" % (os.environ.get('LD_LIBRARY_PATH', ''), bin_path))

@@ -1,11 +1,9 @@
-PROJECT(MyHello)
-cmake_minimum_required(VERSION 3.0)
+project(test_package)
+cmake_minimum_required(VERSION 2.8.11)
 
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-CONAN_BASIC_SETUP()
+conan_basic_setup()
 
-ADD_EXECUTABLE(example sdl.c)
-MESSAGE(${CONAN_LIBS})
-TARGET_LINK_LIBRARIES(example ${CONAN_LIBS})
-# TARGET_LINK_LIBRARIES(example SDL2_image jpeg turbojpeg png16 m z SDL2 SDL2main dl rt pthread)
-
+add_executable(${PROJECT_NAME} test_package.c)
+target_link_libraries(${PROJECT_NAME} ${CONAN_LIBS})
+configure_file(face.png face.png COPYONLY)
